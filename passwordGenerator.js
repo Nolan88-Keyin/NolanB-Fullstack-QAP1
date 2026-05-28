@@ -1,4 +1,3 @@
-const Module = require('node:module');
 const process = require('node:process');
 const readline = require('node:readline');
 const userArguments = process.argv.slice(2);
@@ -19,10 +18,27 @@ let useNumbers = false;
  */
 function parseArguments(userArguments) {
     for (let i = 0; i < userArguments.length; i++) {
-        if (userArguments[i].startsWith('--')) {
-            switch (userArguments[i]) {
+        if (!userArguments[i].startsWith('--')) {
+            console.error(`Unexpected argument: ${userArguments[i]}`);
+            helpMessage();
+            return false;
+        }
+
+        switch (userArguments[i]) {
                 case '--length':
-                    length = parseInt(userArguments[i + 1]);
+                    if (i + 1 >= userArguments.length) {
+                        console.error('Invalid value for --length. Please provide a positive integer.');
+                        return false;
+                    }
+
+                    const parsedLength = Number(userArguments[i + 1]);
+                    if (!Number.isInteger(parsedLength) || parsedLength <= 0) {
+                        console.error('Invalid value for --length. Please provide a positive integer.');
+                        return false;
+                    }
+
+                    length = parsedLength;
+                    i++;
                     break;
                 case '--lowercase':
                     useLowercase = true;
@@ -36,15 +52,20 @@ function parseArguments(userArguments) {
                 case '--h':    
                 case '--help':
                     helpMessage();
-                    return;
+                    return false;
                 default:
-                    console.log(`Unknown option: ${userArguments[i]}`);
+                    console.error(`Unknown option: ${userArguments[i]}`);
                     helpMessage();
-                    break;
+                    return false;
             
                 }
-            }
-        }    
+        }
+
+    if (!useLowercase && !useUppercase && !useNumbers) {
+        useLowercase = true;
+    }
+
+    return true;
 }
 
 /**
@@ -59,7 +80,7 @@ Options:
     --lowercase             Include lowercase letters in the password.
     --uppercase             Include uppercase letters in the password.
     --numbers               Include numbers in the password.
-    --help, -h              Display this help message.
+    --help, --h              Display this help message.
 
 Example:
     node passwordGenerator.js --length 12 --lowercase --uppercase --numbers
@@ -107,8 +128,12 @@ module.exports = {
 };
 
 if (require.main === module) {
-    parseArguments(userArguments);
-    const password = generatePassword(length, useLowercase, useUppercase, useNumbers);
-    console.log(`Generated password: ${password}`);
+    const shouldGeneratePassword = parseArguments(userArguments);
+
+    if (shouldGeneratePassword) {
+        const password = generatePassword(length, useLowercase, useUppercase, useNumbers);
+        console.log(`Generated password: ${password}`);
+    }
+
     iF.close();
 }
